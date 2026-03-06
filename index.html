@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Juego de las Provincias de España</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Contenedor de la Puntuación arriba a la derecha */
+        #score-container {
+            position: absolute;
+            top: 30px;
+            right: 40px;
+            font-size: 28px;
+            font-weight: bold;
+            background: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            color: #333;
+        }
+
+        .points { color: #0078D7; }
+
+        /* Estilos del mapa */
+        #map-container {
+            width: 800px;
+            height: 600px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+            padding: 20px;
+        }
+
+        svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Estilos para las provincias (etiquetas <path> o <rect>) */
+        .provincia {
+            fill: #d3d3d3;
+            stroke: #ffffff;
+            stroke-width: 2;
+            cursor: pointer;
+            transition: fill 0.3s ease;
+        }
+
+        .provincia:hover {
+            fill: #a9cce3;
+        }
+
+        .provincia.acertada {
+            fill: #82e0aa; /* Verde cuando se acierta */
+            cursor: default;
+        }
+
+        /* Estilo para el mensaje de victoria */
+        #win-message {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #27ae60;
+            color: white;
+            padding: 40px;
+            font-size: 32px;
+            font-weight: bold;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="score-container">
+        Puntos: <span id="score" class="points">0</span>
+    </div>
+
+    <div id="win-message">
+        ¡Enhorabuena!<br>Has completado todas las provincias.
+    </div>
+
+    <div id="map-container">
+        <svg viewBox="0 0 800 600" id="espana-map">
+            <rect x="200" y="100" width="150" height="150" class="provincia" data-nombre="Madrid" rx="10"></rect>
+            <rect x="400" y="100" width="150" height="150" class="provincia" data-nombre="Barcelona" rx="10"></rect>
+            <rect x="300" y="300" width="150" height="150" class="provincia" data-nombre="Valencia" rx="10"></rect>
+        </svg>
+    </div>
+
+    <script>
+        // --- Variables principales ---
+        let puntos = 0;
+        let provinciasAcertadas = 0;
+        const provincias = document.querySelectorAll('.provincia');
+        const totalProvinces = provincias.length;
+
+        // --- Función para normalizar texto (quita tildes y pasa a minúsculas) ---
+        // Esto permite que si el usuario escribe "cadiz" o "Cádiz", ambas sean válidas.
+        function normalizarTexto(texto) {
+            return texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+        }
+
+        // --- Función para añadir el texto al mapa cuando se acierta ---
+        function añadirTextoAlSVG(elemento, texto) {
+            const svg = document.getElementById('espana-map');
+            const bbox = elemento.getBBox(); // Obtiene las coordenadas y tamaño de la provincia
+            
+            const textoSVG = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            // Centramos el texto matemáticamente en la provincia
+            textoSVG.setAttribute("x", bbox.x + bbox.width / 2);
+            textoSVG.setAttribute("y", bbox.y + bbox.height / 2);
+            textoSVG.setAttribute("text-anchor", "middle");
+            textoSVG.setAttribute("dominant-baseline", "middle");
+            textoSVG.setAttribute("fill", "#2c3e50");
+            textoSVG.setAttribute("font-size", "16px");
+            textoSVG.setAttribute("font-weight", "bold");
+            textoSVG.setAttribute("pointer-events", "none"); // Evita que el texto interfiera con el clic
+            
+            textoSVG.textContent = texto;
+            svg.appendChild(textoSVG);
+        }
+
+        // --- Lógica principal del juego ---
+        provincias.forEach(provincia => {
+            provincia.addEventListener('click', function() {
+                // Si ya está acertada, no hacemos nada
+                if (this.classList.contains('acertada')) return;
+
+                const nombreReal = this.getAttribute('data-nombre');
+                const respuestaUsuario = prompt('¿Qué provincia es esta?');
+
+                // Si el usuario cancela el prompt, salimos
+                if (respuestaUsuario === null) return;
+
+                const nombreNormalizado = normalizarTexto(nombreReal);
+                const respuestaNormalizada = normalizarTexto(respuestaUsuario);
+
+                if (respuestaNormalizada === nombreNormalizado) {
+                    // Respuesta Correcta
+                    puntos += 10;
+                    this.classList.add('acertada');
+                    añadirTextoAlSVG(this, nombreReal);
+                    provinciasAcertadas++;
+
+                    // Comprobar si ha ganado
+                    if (provinciasAcertadas === totalProvinces) {
+                        document.getElementById('win-message').style.display = 'block';
+                    }
+                } else {
+                    // Respuesta Incorrecta
+                    puntos -= 10;
+                    alert('Incorrecto. Inténtalo de nuevo más tarde.');
+                }
+
+                // Actualizar puntuación en pantalla
+                document.getElementById('score').textContent = puntos;
+            });
+        });
+    </script>
+</body>
+</html>
